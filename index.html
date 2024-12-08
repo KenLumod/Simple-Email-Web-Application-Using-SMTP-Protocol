@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>Email Sender</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link href='https://fonts.googleapis.com/css?family=Roboto:400,100,300,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="css/style.css">
+  </head>
+  <body>
+    <section class="ftco-section">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-md-6 text-center mb-5">
+            <h2 class="heading-section">Email Sender</h2>
+          </div>
+        </div>
+        <div class="row justify-content-center">
+          <div class="col-lg-10">
+            <div class="wrapper">
+              <div class="row">
+                <div class="col-md-12">
+                  <div class="contact-wrap w-100 p-md-5 p-4">
+                    <h3 class="mb-4">Send an Email</h3>
+                    <!-- Warning Message Area (for displaying errors) -->
+                    <div id="form-message-warning" class="mb-4" style="display: none; color: red;"></div>
+                    <!-- Success Message Area (for displaying success) -->
+                    <div id="form-message-success" class="mb-4" style="display: none; color: green;">
+                      Your email has been sent successfully!
+                    </div>
+                    <form method="POST" id="contactForm" name="contactForm" class="contactForm">
+                      <div class="row">
+                        <div class="col-md-12">
+                          <div class="form-group">
+                            <label class="label" for="sender_email">Sender Email</label>
+                            <input type="email" class="form-control" name="sender_email" id="sender_email" placeholder="Sender Email" required>
+                          </div>
+                        </div>
+                        <div class="col-md-12"> 
+                          <div class="form-group">
+                            <label class="label" for="app_password">App Password</label>
+                            <input type="password" class="form-control" name="app_password" id="app_password" placeholder="App Password" required>
+                          </div>
+                        </div>
+                        <div class="col-md-12">
+                          <div class="form-group">
+                            <label class="label" for="receiver_email">Receiver Email</label>
+                            <input type="email" class="form-control" name="receiver_email" id="receiver_email" placeholder="Receiver Email" required>
+                          </div>
+                        </div>
+                        <div class="col-md-12">
+                          <div class="form-group">
+                            <label class="label" for="subject">Subject</label>
+                            <input type="text" class="form-control" name="subject" id="subject" placeholder="Subject" required>
+                          </div>
+                        </div>
+                        <div class="col-md-12">
+                          <div class="form-group">
+                            <label class="label" for="message">Message</label>
+                            <textarea name="message" class="form-control" id="message" cols="30" rows="4" placeholder="Message" required></textarea>
+                          </div>
+                        </div>
+                        <div class="col-md-12">
+                          <div class="form-group">
+                            <input type="submit" value="Send Email" class="btn btn-primary">
+                            <div class="submitting"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <script src="js/jquery.min.js"></script>
+    <script src="js/popper.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/jquery.validate.min.js"></script>
+    <script src="js/main.js"></script>
+
+    <script>
+      document.getElementById('contactForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        // Declare the form variable
+        const form = document.getElementById('contactForm');  // Declare form variable here
+
+        // Get values from the form
+        const senderEmail = document.getElementById('sender_email').value.trim();
+        const appPassword = document.getElementById('app_password').value.trim();
+        const receiverEmail = document.getElementById('receiver_email').value.trim();
+        const subject = document.getElementById('subject').value.trim();
+        const message = document.getElementById('message').value.trim();
+
+        // Clear previous messages
+        const successMessage = document.getElementById('form-message-success');
+        const warningMessage = document.getElementById('form-message-warning');
+        successMessage.style.display = 'none';
+        warningMessage.style.display = 'none';
+
+        // Validate if all required fields are filled
+        if (!senderEmail || !appPassword || !receiverEmail || !subject || !message) {
+            warningMessage.textContent = 'All fields are required.';
+            warningMessage.style.display = 'block';
+            return;
+        }
+
+        // Validate email format
+        if (!validateEmail(senderEmail)) {
+            warningMessage.textContent = 'Invalid sender email address. Ensure it contains @ and domain.';
+            warningMessage.style.display = 'block';
+            return;
+        }
+
+        if (!validateEmail(receiverEmail)) {
+            warningMessage.textContent = 'Invalid receiver email address. Ensure it contains @ and domain.';
+            warningMessage.style.display = 'block';
+            return;
+        }
+
+        // Send the email using a fetch API request
+        fetch('http://127.0.0.1:5000/send-email', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                email: senderEmail,
+                app_password: appPassword,
+                receiver_email: receiverEmail,
+                subject: subject,
+                message: message
+            }),
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to send email.');
+            }
+            return response.json();  // Parse JSON response
+        })
+        .then(data => {
+            if (data.success) {
+                // Reset the form and show success message
+                form.reset();  // Now, form is defined and can be used to reset the form
+                successMessage.textContent = 'Your email has been sent successfully!';
+                successMessage.style.display = 'block';
+                setTimeout(() => successMessage.style.display = 'none', 5000); // Auto-hide success message
+            } else {
+                // Display error from the backend
+                warningMessage.textContent = data.message || 'Error sending email: ' + data.message;
+                warningMessage.style.display = 'block';
+            }
+        })
+        .catch(error => {
+            warningMessage.textContent = 'Error sending email: ' + error.message;
+            warningMessage.style.display = 'block';
+        });
+    });
+
+    // Email format validation (checks for the presence of @domain)
+    function validateEmail(email) {
+        return email.includes('@') && email.split('@')[1].includes('.');
+    }
+    </script>
+  </body>
+</html>
